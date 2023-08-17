@@ -59,6 +59,7 @@ class PostModelView(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         instance = self.queryset.get(id=pk)
+
         if instance:
             return Response(self.serializer_class(instance).data, status=status.HTTP_200_OK)
 
@@ -66,16 +67,16 @@ class PostModelView(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            title = request.POST.get('title')
-            body = request.POST.get('body')
-            serializer.save()
 
+        if serializer.is_valid():
+            serializer.save()
             return Response(status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None, *args, **kwargs):
         instance = self.queryset.get(id=pk)
+
         if instance:
             serializer = self.serializer_class(instance=instance, data=request.data, partial=True)
 
@@ -87,6 +88,7 @@ class PostModelView(viewsets.ModelViewSet):
 
     def destroy(self, request, pk=None, *args, **kwargs):
         instance = self.queryset.get(id=pk)
+
         if instance:
             instance.delete()
             return Response(status=status.HTTP_200_OK)
@@ -101,9 +103,9 @@ class PostLikeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, pk=None, *args, **kwargs):
-        post_likes_objs = self.queryset.filter(postlike_post=pk)
+        post_like_obj = self.queryset.filter(postlike_post=pk)
 
-        serializer = self.serializer_class(post_likes_objs, many=True)
+        serializer = self.serializer_class(post_like_obj, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
         # return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -123,7 +125,7 @@ class PostLikeViewSet(viewsets.ModelViewSet):
         print(postlike_id)
 
         if postlike_id:
-            postlike_obj = self.queryset.filter(postlike_user=request.user.id, postlike_post=postlike_id)
+            postlike_obj = self.queryset.filter(postlike_user=request.user.id, postlike_post=postlike_id).first()
             postlike_obj.delete()
             return Response(status=status.HTTP_200_OK)
 
@@ -141,7 +143,7 @@ class PostCommentViewSet(viewsets.ModelViewSet):
         post = Post.objects.get(id=post_id)
         # Not working
         if post:
-            post_comment_obj = self.queryset.filter(postcomment_user=request.user, postcomment_post=post)
+            post_comment_obj = self.queryset.filter(postcomment_post__id=post.id)
             serializer = self.serializer_class(post_comment_obj, many=True)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -165,7 +167,7 @@ class PostCommentViewSet(viewsets.ModelViewSet):
         comment_obj = PostComment.objects.get(request.data.get('comment_id'))
 
         if post_obj and comment_obj:
-            post_comment_obj = self.queryset.filter(postcomment_user=post_obj, postcomment_post=comment_obj)
+            post_comment_obj = self.queryset.filter(postcomment_user=post_obj, postcomment_post=comment_obj).first()
 
             if post_comment_obj:
                 post_comment_obj.delete()
